@@ -8,7 +8,7 @@ import re
 import datetime
 import time
 import sys
-import ddddocr
+# import ddddocr
 
 
 class ClockIn(object):
@@ -34,7 +34,7 @@ class ClockIn(object):
         self.username = username
         self.password = password
         self.sess = requests.Session()
-        self.ocr = ddddocr.DdddOcr()
+#         self.ocr = ddddocr.DdddOcr()
 
     def login(self):
         """Login to ZJU platform"""
@@ -69,14 +69,12 @@ class ClockIn(object):
         today = datetime.date.today()
         return "%4d%02d%02d" % (today.year, today.month, today.day)
 
-    def get_captcha(self):
-        """Get CAPTCHA code"""
-        cookie_dict = {'eai-sess': 'p2cl0rbv8n6u11ftarvnclebe4'}
-        self.sess.cookies = requests.cookies.cookiejar_from_dict(cookie_dict)
-        resp = self.sess.get(self.CAPTCHA_URL)
-        captcha = self.ocr.classification(resp.content)
-        print("验证码：", captcha)
-        return captcha
+#     def get_captcha(self):
+#         """Get CAPTCHA code"""
+#         resp = self.sess.get(self.CAPTCHA_URL)
+#         captcha = self.ocr.classification(resp.content)
+#         print("验证码：", captcha)
+#         return captcha
 
     def get_info(self, html=None):
         """Get hitcard info, which is the old info with updated new time."""
@@ -119,7 +117,12 @@ class ClockIn(object):
         new_info['jcqzrq'] = ""
         new_info['gwszdd'] = ""
         new_info['szgjcs'] = ""
-        new_info['verifyCode'] = self.get_captcha()
+        
+        # 2022.05.07
+        # new_info['verifyCode'] = self.get_captcha() # 验证码识别（已取消）
+        
+        # 2022.07.05
+        new_info['internship'] = 3  # 今日是否进行实习或实践
 
         # 2021.08.05 Fix 2
         magics = re.findall(r'"([0-9a-f]{32})":\s*"([^\"]+)"', html)
@@ -190,6 +193,11 @@ def main(username, password):
         else:
             print(res['m'])
             if res['m'].find("已经") != -1: # 已经填报过了 不报错
+                pass
+            elif res['m'].find("验证码错误") != -1: # 验证码错误
+                print('再次尝试')
+                time.sleep(5)
+                main(username, password)
                 pass
             else:
                 raise Exception
